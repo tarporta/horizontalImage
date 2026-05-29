@@ -85,6 +85,27 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun CenterPlaced(
+    cx: Float,
+    cy: Float,
+    w: Float,
+    h: Float,
+    ratio: Float,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .offset(
+                x = ((cx - w / 2f) * ratio).dp,
+                y = ((cy - h / 2f) * ratio).dp
+            )
+            .size((w * ratio).dp, (h * ratio).dp),
+        contentAlignment = Alignment.Center,
+        content = content
+    )
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PosterMakerScreen(
@@ -278,40 +299,55 @@ fun PosterMakerScreen(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(32.dp)
         ) {
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.White)
-                    .padding(16.dp)
             ) {
-                // Border Styling
+                val cardWidthDp = maxWidth
+                val ratio = cardWidthDp.value / 1080f
+                val scale = fontSizeSp / 40f
+
+                // Border Styling matching PosterGenerator exactly in proportional inset and stroke
+                val borderInsetDp = (40f * ratio).dp
+                val doubleBorderInnerInsetDp = (52f * ratio).dp
+                val thinStrokeDp = (6f * ratio).dp
+                val boldStrokeDp = (16f * ratio).dp
+                val borderCornerRadiusDp = (16f * ratio).dp
+
                 when (borderStyle) {
                     "thin" -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .border(1.5.dp, activeColor, RoundedCornerShape(24.dp))
+                                .padding(borderInsetDp)
+                                .border(thinStrokeDp, activeColor, RoundedCornerShape(borderCornerRadiusDp))
                         )
                     }
                     "bold" -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .border(4.dp, activeColor, RoundedCornerShape(24.dp))
+                                .padding(borderInsetDp)
+                                .border(boldStrokeDp, activeColor, RoundedCornerShape(borderCornerRadiusDp))
                         )
                     }
                     "double" -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(2.dp)
-                                .border(1.dp, activeColor, RoundedCornerShape(24.dp))
+                                .padding(borderInsetDp)
+                                .border(thinStrokeDp, activeColor, RoundedCornerShape(borderCornerRadiusDp))
                         )
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(5.dp)
-                                .border(1.dp, activeColor, RoundedCornerShape(24.dp))
+                                .padding(doubleBorderInnerInsetDp)
+                                .border(
+                                    thinStrokeDp,
+                                    activeColor,
+                                    RoundedCornerShape(((16f - 12f).coerceAtLeast(4f) * ratio).dp)
+                                )
                         )
                     }
                 }
@@ -351,270 +387,331 @@ fun PosterMakerScreen(
                     }
                 }
 
-                // Centered elements scale relative to user's selected typography slider
-                val scaleFactor = fontSizeSp / 40f
-                val emojiSize = (48f * scaleFactor * 0.9f).sp
-                val wordSize = (20f * scaleFactor * 0.9f).sp
-
-                // Load custom images dynamically for live preview using cached original bitmaps
-                val previewBitmapA = remember(decodedBitmapA, imageSizeA, featherA, scaleFactor) {
+                // Load feathered bitmaps for rendering
+                val previewBitmapA = remember(decodedBitmapA, imageSizeA, featherA, scale) {
                     val original = decodedBitmapA
                     if (original != null) {
-                        val targetPx = (imageSizeA * scaleFactor * 2f).toInt().coerceAtLeast(1)
+                        val targetPx = (imageSizeA * scale * 2f).toInt().coerceAtLeast(1)
                         PosterGenerator.createFeatheredBitmap(original, targetPx, featherA)?.asImageBitmap()
                     } else null
                 }
 
-                val previewBitmapB = remember(decodedBitmapB, imageSizeB, featherB, scaleFactor) {
+                val previewBitmapB = remember(decodedBitmapB, imageSizeB, featherB, scale) {
                     val original = decodedBitmapB
                     if (original != null) {
-                        val targetPx = (imageSizeB * scaleFactor * 2f).toInt().coerceAtLeast(1)
+                        val targetPx = (imageSizeB * scale * 2f).toInt().coerceAtLeast(1)
                         PosterGenerator.createFeatheredBitmap(original, targetPx, featherB)?.asImageBitmap()
                     } else null
                 }
-                
-                // Configured operator & mystery size / styling
-                val opSize = operatorSizeSp.sp
+
                 val opWeight = when (operatorWeight) {
                     "light" -> FontWeight.Light
                     "bold" -> FontWeight.Bold
                     else -> FontWeight.Normal
                 }
 
-                val qSize = mysterySizeSp.sp
                 val qWeight = when (mysteryWeight) {
                     "bold" -> FontWeight.Bold
                     "black" -> FontWeight.Black
                     else -> FontWeight.Normal
                 }
 
-                val boxWidthHeight = (mysterySizeSp * 2.2f).dp
-                val boxCorner = (mysterySizeSp * 0.4f).dp
-
                 if (isVerticalLayout) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(vertical = 24.dp, horizontal = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // Element A
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (previewBitmapA != null) {
-                                Image(
-                                    bitmap = previewBitmapA,
-                                    contentDescription = "Custom Image A",
-                                    modifier = Modifier.size((imageSizeA * scaleFactor * 0.45f).dp)
-                                )
-                            } else {
-                                Text(text = emojiA, fontSize = emojiSize)
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
+                    // Vertical exact coordinates
+                    val heightA = if (imagePathA != null) imageSizeA * scale else 160f * scale
+                    val heightB = if (imagePathB != null) imageSizeB * scale else 160f * scale
+                    val labelHeight = 72f * scale
+                    val spacing = 24f * scale
+                    val opSpacing = 80f * scale
+                    val opHeight = operatorSizeSp * 3.5f
+                    val boxHeight = mysterySizeSp * 3.5f * 2.1f // vertical layout multiplier 2.1
+                    
+                    val totalStackHeight = (
+                        heightA + spacing + labelHeight +
+                        opSpacing + opHeight + opSpacing +
+                        heightB + spacing + labelHeight +
+                        opSpacing + opHeight + opSpacing +
+                        boxHeight
+                    )
+                    
+                    val currentY = (1920f - totalStackHeight) / 2f
+                    val centerX = 540f
+
+                    // 1. Element A
+                    val elementACY = currentY + (heightA / 2f)
+                    CenterPlaced(cx = centerX, cy = elementACY, w = if (imagePathA != null) imageSizeA * scale else 160f * scale, h = heightA, ratio = ratio) {
+                        if (previewBitmapA != null) {
+                            Image(
+                                bitmap = previewBitmapA,
+                                contentDescription = "Custom Image A",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
                             Text(
-                                text = textA.uppercase(Locale.getDefault()), 
-                                fontSize = wordSize, 
-                                fontWeight = FontWeight.Black,
-                                color = activeColor,
-                                letterSpacing = (-0.5).sp,
-                                textAlign = TextAlign.Center,
-                                fontFamily = customFontFamily
+                                text = emojiA,
+                                fontSize = (160f * scale * ratio).sp,
+                                textAlign = TextAlign.Center
                             )
                         }
+                    }
 
-                        // Plus Operator
+                    val textA_CY = currentY + heightA + spacing + (labelHeight / 2f)
+                    CenterPlaced(cx = centerX, cy = textA_CY, w = 1000f, h = labelHeight, ratio = ratio) {
                         Text(
-                            text = "+", 
-                            fontSize = opSize, 
-                            fontWeight = opWeight,
-                            color = Color(0xFFcbd5e1), // slate-300
+                            text = textA.uppercase(Locale.getDefault()),
+                            fontSize = (72f * scale * ratio).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = activeColor,
+                            letterSpacing = (-0.5).sp,
+                            textAlign = TextAlign.Center,
                             fontFamily = customFontFamily
                         )
+                    }
 
-                        // Element B
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (previewBitmapB != null) {
-                                Image(
-                                    bitmap = previewBitmapB,
-                                    contentDescription = "Custom Image B",
-                                    modifier = Modifier.size((imageSizeB * scaleFactor * 0.45f).dp)
-                                )
-                            } else {
-                                Text(text = emojiB, fontSize = emojiSize)
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
+                    // 2. Plus Operator
+                    val plus_CY = currentY + heightA + spacing + labelHeight + opSpacing + (opHeight / 2f)
+                    CenterPlaced(cx = centerX, cy = plus_CY, w = 300f, h = opHeight, ratio = ratio) {
+                        Text(
+                            text = "+",
+                            fontSize = (operatorSizeSp * 3.5f * ratio).sp,
+                            fontWeight = opWeight,
+                            color = Color(0xFF94A3B8), // slate-400
+                            fontFamily = customFontFamily,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 3. Element B
+                    val elementBCY = currentY + heightA + spacing + labelHeight + opSpacing + opHeight + opSpacing + (heightB / 2f)
+                    CenterPlaced(cx = centerX, cy = elementBCY, w = if (imagePathB != null) imageSizeB * scale else 160f * scale, h = heightB, ratio = ratio) {
+                        if (previewBitmapB != null) {
+                            Image(
+                                bitmap = previewBitmapB,
+                                contentDescription = "Custom Image B",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
                             Text(
-                                text = textB.uppercase(Locale.getDefault()), 
-                                fontSize = wordSize, 
-                                fontWeight = FontWeight.Black,
-                                color = activeColor,
-                                letterSpacing = (-0.5).sp,
-                                textAlign = TextAlign.Center,
-                                fontFamily = customFontFamily
+                                text = emojiB,
+                                fontSize = (160f * scale * ratio).sp,
+                                textAlign = TextAlign.Center
                             )
                         }
+                    }
 
-                        // Equal Operator
+                    val textB_CY = currentY + heightA + spacing + labelHeight + opSpacing + opHeight + opSpacing + heightB + spacing + (labelHeight / 2f)
+                    CenterPlaced(cx = centerX, cy = textB_CY, w = 1000f, h = labelHeight, ratio = ratio) {
                         Text(
-                            text = "=", 
-                            fontSize = opSize, 
-                            fontWeight = opWeight,
-                            color = Color(0xFFcbd5e1), // slate-300
+                            text = textB.uppercase(Locale.getDefault()),
+                            fontSize = (72f * scale * ratio).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = activeColor,
+                            letterSpacing = (-0.5).sp,
+                            textAlign = TextAlign.Center,
                             fontFamily = customFontFamily
                         )
+                    }
 
-                        // Mystery Box
+                    // 4. Equal Operator
+                    val equal_CY = currentY + heightA + spacing + labelHeight + opSpacing + opHeight + opSpacing + heightB + spacing + labelHeight + opSpacing + (opHeight / 2f)
+                    CenterPlaced(cx = centerX, cy = equal_CY, w = 300f, h = opHeight, ratio = ratio) {
+                        Text(
+                            text = "=",
+                            fontSize = (operatorSizeSp * 3.5f * ratio).sp,
+                            fontWeight = opWeight,
+                            color = Color(0xFF94A3B8),
+                            fontFamily = customFontFamily,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 5. Mystery Box
+                    val box_CY = currentY + heightA + spacing + labelHeight + opSpacing + opHeight + opSpacing + heightB + spacing + labelHeight + opSpacing + opHeight + opSpacing + (boxHeight / 2f)
+                    val boxCornerRadius = boxHeight * 0.18f
+                    CenterPlaced(cx = centerX, cy = box_CY, w = boxHeight, h = boxHeight, ratio = ratio) {
                         Box(
                             modifier = Modifier
-                                .size(boxWidthHeight)
-                                .clip(RoundedCornerShape(boxCorner))
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape((boxCornerRadius * ratio).dp))
                                 .background(Color(0xFFf8fafc))
                                 .drawBehind {
-                                    val strokeWidth = 2.dp.toPx()
-                                    val dashWidth = 8.dp.toPx()
-                                    val dashGap = 6.dp.toPx()
+                                    val strokeWidth = (6f * scale * ratio).dp.toPx()
+                                    val dashWidth = (24f * scale * ratio).dp.toPx()
+                                    val dashGap = (16f * scale * ratio).dp.toPx()
                                     val pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
                                         floatArrayOf(dashWidth, dashGap),
                                         0f
                                     )
                                     drawRoundRect(
-                                        color = Color(0xFFcbd5e1), // slate-300
+                                        color = Color(0xFFcbd5e1),
                                         style = androidx.compose.ui.graphics.drawscope.Stroke(
                                             width = strokeWidth,
                                             pathEffect = pathEffect
                                         ),
-                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(boxCorner.toPx())
+                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius((boxCornerRadius * ratio).dp.toPx())
                                     )
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "?",
-                                fontSize = qSize,
+                                fontSize = (mysterySizeSp * 3.5f * ratio).sp,
                                 fontWeight = qWeight,
-                                color = Color(0xFFcbd5e1),
-                                fontFamily = customFontFamily
+                                color = Color(0xFF94A3B8),
+                                fontFamily = customFontFamily,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // Element A
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (previewBitmapA != null) {
-                                Image(
-                                    bitmap = previewBitmapA,
-                                    contentDescription = "Custom Image A",
-                                    modifier = Modifier.size((imageSizeA * scaleFactor * 0.45f).dp)
-                                )
-                            } else {
-                                Text(text = emojiA, fontSize = emojiSize)
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
+                    // Horizontal Layout exact coordinates matching PosterGenerator
+                    val verticalCenterY = 960f
+                    val xA = 180f
+                    val xPlus = 370f
+                    val xB = 540f
+                    val xEqual = 710f
+                    val xMystery = 900f
+
+                    val textYDelta = 45f * scale
+                    val textYDown = 65f * scale
+
+                    // 1. Element A
+                    val imgSizeA = imageSizeA * scale
+                    val hEmojiSize = 140f * scale
+                    val hTextSize = 54f * scale
+
+                    CenterPlaced(cx = xA, cy = verticalCenterY - textYDelta, w = if (imagePathA != null) imgSizeA else hEmojiSize, h = if (imagePathA != null) imgSizeA else hEmojiSize, ratio = ratio) {
+                        if (previewBitmapA != null) {
+                            Image(
+                                bitmap = previewBitmapA,
+                                contentDescription = "Custom Image A",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
                             Text(
-                                text = textA.uppercase(Locale.getDefault()), 
-                                fontSize = wordSize, 
-                                fontWeight = FontWeight.Black,
-                                color = activeColor,
-                                letterSpacing = (-0.5).sp,
-                                textAlign = TextAlign.Center,
-                                fontFamily = customFontFamily
+                                text = emojiA,
+                                fontSize = (hEmojiSize * ratio).sp,
+                                textAlign = TextAlign.Center
                             )
                         }
+                    }
 
-                        // Plus Operator
+                    CenterPlaced(cx = xA, cy = verticalCenterY + textYDown, w = 320f, h = hTextSize, ratio = ratio) {
                         Text(
-                            text = "+", 
-                            fontSize = opSize, 
-                            fontWeight = opWeight,
-                            color = Color(0xFFcbd5e1), // slate-300
+                            text = textA.uppercase(Locale.getDefault()),
+                            fontSize = (hTextSize * ratio).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = activeColor,
+                            letterSpacing = (-0.5).sp,
+                            textAlign = TextAlign.Center,
                             fontFamily = customFontFamily
                         )
+                    }
 
-                        // Element B
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (previewBitmapB != null) {
-                                Image(
-                                    bitmap = previewBitmapB,
-                                    contentDescription = "Custom Image B",
-                                    modifier = Modifier.size((imageSizeB * scaleFactor * 0.45f).dp)
-                                )
-                            } else {
-                                Text(text = emojiB, fontSize = emojiSize)
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
+                    // 2. Plus Operator
+                    CenterPlaced(cx = xPlus, cy = verticalCenterY, w = 100f, h = operatorSizeSp * 3.5f, ratio = ratio) {
+                        Text(
+                            text = "+",
+                            fontSize = (operatorSizeSp * 3.5f * ratio).sp,
+                            fontWeight = opWeight,
+                            color = Color(0xFF94A3B8),
+                            fontFamily = customFontFamily,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 3. Element B
+                    val imgSizeB = imageSizeB * scale
+                    CenterPlaced(cx = xB, cy = verticalCenterY - textYDelta, w = if (imagePathB != null) imgSizeB else hEmojiSize, h = if (imagePathB != null) imgSizeB else hEmojiSize, ratio = ratio) {
+                        if (previewBitmapB != null) {
+                            Image(
+                                bitmap = previewBitmapB,
+                                contentDescription = "Custom Image B",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
                             Text(
-                                text = textB.uppercase(Locale.getDefault()), 
-                                fontSize = wordSize, 
-                                fontWeight = FontWeight.Black,
-                                color = activeColor,
-                                letterSpacing = (-0.5).sp,
-                                textAlign = TextAlign.Center,
-                                fontFamily = customFontFamily
+                                text = emojiB,
+                                fontSize = (hEmojiSize * ratio).sp,
+                                textAlign = TextAlign.Center
                             )
                         }
+                    }
 
-                        // Equal Operator
+                    CenterPlaced(cx = xB, cy = verticalCenterY + textYDown, w = 320f, h = hTextSize, ratio = ratio) {
                         Text(
-                            text = "=", 
-                            fontSize = opSize, 
-                            fontWeight = opWeight,
-                            color = Color(0xFFcbd5e1), // slate-300
+                            text = textB.uppercase(Locale.getDefault()),
+                            fontSize = (hTextSize * ratio).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = activeColor,
+                            letterSpacing = (-0.5).sp,
+                            textAlign = TextAlign.Center,
                             fontFamily = customFontFamily
                         )
+                    }
 
-                        // Mystery Box
+                    // 4. Equal Operator
+                    CenterPlaced(cx = xEqual, cy = verticalCenterY, w = 100f, h = operatorSizeSp * 3.5f, ratio = ratio) {
+                        Text(
+                            text = "=",
+                            fontSize = (operatorSizeSp * 3.5f * ratio).sp,
+                            fontWeight = opWeight,
+                            color = Color(0xFF94A3B8),
+                            fontFamily = customFontFamily,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    // 5. Mystery Box
+                    val boxWidthHeight = mysterySizeSp * 3.5f * 2.0f
+                    val boxCornerRadius = boxWidthHeight * 0.18f
+                    CenterPlaced(cx = xMystery, cy = verticalCenterY, w = boxWidthHeight, h = boxWidthHeight, ratio = ratio) {
                         Box(
                             modifier = Modifier
-                                .size(boxWidthHeight)
-                                .clip(RoundedCornerShape(boxCorner))
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape((boxCornerRadius * ratio).dp))
                                 .background(Color(0xFFf8fafc))
                                 .drawBehind {
-                                    val strokeWidth = 2.dp.toPx()
-                                    val dashWidth = 8.dp.toPx()
-                                    val dashGap = 6.dp.toPx()
+                                    val strokeWidth = (6f * scale * ratio).dp.toPx()
+                                    val dashWidth = (24f * scale * ratio).dp.toPx()
+                                    val dashGap = (16f * scale * ratio).dp.toPx()
                                     val pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
                                         floatArrayOf(dashWidth, dashGap),
                                         0f
                                     )
                                     drawRoundRect(
-                                        color = Color(0xFFcbd5e1), // slate-300
+                                        color = Color(0xFFcbd5e1),
                                         style = androidx.compose.ui.graphics.drawscope.Stroke(
                                             width = strokeWidth,
                                             pathEffect = pathEffect
                                         ),
-                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(boxCorner.toPx())
+                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius((boxCornerRadius * ratio).dp.toPx())
                                     )
                                 },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "?",
-                                fontSize = qSize,
+                                fontSize = (mysterySizeSp * 3.5f * ratio).sp,
                                 fontWeight = qWeight,
-                                color = Color(0xFFcbd5e1),
-                                fontFamily = customFontFamily
+                                color = Color(0xFF94A3B8),
+                                fontFamily = customFontFamily,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                // Optional Footer text
+                // Optional Footer text matching PosterGenerator exactly
                 if (showFooter && footerText.isNotEmpty()) {
                     Text(
-                        text = footerText,
-                        color = activeColor.copy(alpha = 0.5f),
-                        fontSize = 9.sp,
+                        text = footerText.uppercase(Locale.getDefault()),
+                        color = activeColor.copy(alpha = 0.58f),
+                        fontSize = (32f * ratio).sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = (100f * ratio).dp),
                         textAlign = TextAlign.Center,
                         fontFamily = customFontFamily
                     )
