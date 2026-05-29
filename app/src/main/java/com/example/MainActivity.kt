@@ -207,10 +207,10 @@ fun PosterMakerScreen(
     }
 
     val customFontFamily = remember(customFontPath) {
-        if (customFontPath != null) {
+        if (customFontPath != null && java.io.File(customFontPath).exists()) {
             try {
                 androidx.compose.ui.text.font.FontFamily(android.graphics.Typeface.createFromFile(customFontPath))
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 androidx.compose.ui.text.font.FontFamily.SansSerif
             }
         } else {
@@ -316,25 +316,60 @@ fun PosterMakerScreen(
                     }
                 }
 
+                // Load and cache original bitmaps to avoid heavy decodes in recompositions
+                var decodedBitmapA by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+                DisposableEffect(imagePathA) {
+                    if (imagePathA != null) {
+                        try {
+                            decodedBitmapA = android.graphics.BitmapFactory.decodeFile(imagePathA)
+                        } catch (e: Throwable) {
+                            decodedBitmapA = null
+                        }
+                    } else {
+                        decodedBitmapA = null
+                    }
+                    onDispose {
+                        decodedBitmapA?.recycle()
+                        decodedBitmapA = null
+                    }
+                }
+
+                var decodedBitmapB by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+                DisposableEffect(imagePathB) {
+                    if (imagePathB != null) {
+                        try {
+                            decodedBitmapB = android.graphics.BitmapFactory.decodeFile(imagePathB)
+                        } catch (e: Throwable) {
+                            decodedBitmapB = null
+                        }
+                    } else {
+                        decodedBitmapB = null
+                    }
+                    onDispose {
+                        decodedBitmapB?.recycle()
+                        decodedBitmapB = null
+                    }
+                }
+
                 // Centered elements scale relative to user's selected typography slider
                 val scaleFactor = fontSizeSp / 40f
                 val emojiSize = (48f * scaleFactor * 0.9f).sp
                 val wordSize = (20f * scaleFactor * 0.9f).sp
 
-                // Load custom images dynamically for live preview
-                val previewBitmapA = remember(imagePathA, imageSizeA, featherA, scaleFactor) {
-                    val pathA = imagePathA
-                    if (pathA != null) {
+                // Load custom images dynamically for live preview using cached original bitmaps
+                val previewBitmapA = remember(decodedBitmapA, imageSizeA, featherA, scaleFactor) {
+                    val original = decodedBitmapA
+                    if (original != null) {
                         val targetPx = (imageSizeA * scaleFactor * 2f).toInt().coerceAtLeast(1)
-                        PosterGenerator.loadFeatheredBitmap(pathA, targetPx, featherA)?.asImageBitmap()
+                        PosterGenerator.createFeatheredBitmap(original, targetPx, featherA)?.asImageBitmap()
                     } else null
                 }
 
-                val previewBitmapB = remember(imagePathB, imageSizeB, featherB, scaleFactor) {
-                    val pathB = imagePathB
-                    if (pathB != null) {
+                val previewBitmapB = remember(decodedBitmapB, imageSizeB, featherB, scaleFactor) {
+                    val original = decodedBitmapB
+                    if (original != null) {
                         val targetPx = (imageSizeB * scaleFactor * 2f).toInt().coerceAtLeast(1)
-                        PosterGenerator.loadFeatheredBitmap(pathB, targetPx, featherB)?.asImageBitmap()
+                        PosterGenerator.createFeatheredBitmap(original, targetPx, featherB)?.asImageBitmap()
                     } else null
                 }
                 
@@ -1385,8 +1420,8 @@ fun PosterMakerScreen(
                 activeCategory.emojis
             } else {
                 val query = dialogSearchQuery.trim().lowercase()
+                val matchesText = EmojiDatabase.findEmojiForText(query)
                 EmojiDatabase.categories.flatMap { it.emojis }.distinct().filter { emoji ->
-                    val matchesText = EmojiDatabase.findEmojiForText(query)
                     emoji == matchesText || 
                     EmojiDatabase.emojiMap.entries.any { (key, value) -> value == emoji && key.contains(query) } ||
                     EmojiDatabase.englishEmojiMap.entries.any { (key, value) -> value == emoji && key.contains(query) }

@@ -65,7 +65,49 @@ object PosterGenerator {
             }
             canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), paint)
             return result
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            return null
+        }
+    }
+
+    /**
+     * Applies scaling and white circular feathering to a pre-loaded bitmap.
+     * Keeps memory footprint low and avoids repeated file decodes.
+     */
+    fun createFeatheredBitmap(original: Bitmap, targetSize: Int, feather: Float): Bitmap? {
+        try {
+            val size = targetSize.coerceAtLeast(1)
+            val scaled = Bitmap.createScaledBitmap(original, size, size, true)
+            if (feather <= 0f) {
+                return scaled
+            }
+            // Create a mutable copy to apply radial feather brush
+            val result = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(result)
+            canvas.drawBitmap(scaled, 0f, 0f, null)
+            if (scaled != original) {
+                scaled.recycle()
+            }
+
+            // Draw white radial gradient centered over the bitmap
+            val paint = Paint().apply {
+                isAntiAlias = true
+                val cx = size / 2f
+                val cy = size / 2f
+                val radius = size / 2f
+                val colors = intArrayOf(Color.TRANSPARENT, Color.TRANSPARENT, Color.WHITE)
+                // Stops move inward as feather increases (feathering gets wider)
+                val stops = floatArrayOf(0f, (1f - feather).coerceIn(0f, 1f), 1f)
+                shader = android.graphics.RadialGradient(
+                    cx, cy, radius,
+                    colors, stops,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+            }
+            canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), paint)
+            return result
+        } catch (e: Throwable) {
             e.printStackTrace()
             return null
         }
@@ -103,20 +145,20 @@ object PosterGenerator {
         val canvas = Canvas(bitmap)
 
         // Load custom fonts if supplied, otherwise standard defaults
-        val baseTypeface = if (customFontPath != null) {
+        val baseTypeface = if (customFontPath != null && java.io.File(customFontPath).exists()) {
             try {
                 Typeface.createFromFile(customFontPath)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
             }
         } else {
             Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         }
 
-        val regularTypeface = if (customFontPath != null) {
+        val regularTypeface = if (customFontPath != null && java.io.File(customFontPath).exists()) {
             try {
                 Typeface.createFromFile(customFontPath)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
             }
         } else {

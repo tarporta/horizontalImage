@@ -108,29 +108,38 @@ class PosterViewModel(
         )
 
     init {
-        // Load initial settings from SharedPreferences for auto-save restore
-        _textA.value = prefs.getString("textA", "사과") ?: "사과"
-        _emojiA.value = prefs.getString("emojiA", "🍎") ?: "🍎"
-        _textB.value = prefs.getString("textB", "바나나") ?: "바나나"
-        _emojiB.value = prefs.getString("emojiB", "🍌") ?: "🍌"
-        _fontSizeSp.value = prefs.getFloat("fontSizeSp", 40f)
-        _textColorHex.value = prefs.getString("textColorHex", "#000000") ?: "#000000"
-        _isVerticalLayout.value = prefs.getBoolean("isVerticalLayout", false)
-        _footerText.value = prefs.getString("footerText", "EMOJI FORMULA POSTER") ?: "EMOJI FORMULA POSTER"
-        _showFooter.value = prefs.getBoolean("showFooter", true)
-        _borderStyle.value = prefs.getString("borderStyle", "thin") ?: "thin"
-        _operatorSize.value = prefs.getFloat("operatorSizeSp", 18f)
-        _operatorWeight.value = prefs.getString("operatorWeight", "light") ?: "light"
-        _mysterySize.value = prefs.getFloat("mysterySizeSp", 24f)
-        _mysteryWeight.value = prefs.getString("mysteryWeight", "bold") ?: "bold"
-        _customFontPath.value = prefs.getString("customFontPath", null)
-        _customFontName.value = prefs.getString("customFontName", null)
-        _imagePathA.value = prefs.getString("imagePathA", null)
-        _imagePathB.value = prefs.getString("imagePathB", null)
-        _imageSizeA.value = prefs.getFloat("imageSizeA", 120f)
-        _imageSizeB.value = prefs.getFloat("imageSizeB", 120f)
-        _featherA.value = prefs.getFloat("featherA", 0f)
-        _featherB.value = prefs.getFloat("featherB", 0f)
+        try {
+            // Load initial settings from SharedPreferences for auto-save restore
+            _textA.value = prefs.getString("textA", "사과") ?: "사과"
+            _emojiA.value = prefs.getString("emojiA", "🍎") ?: "🍎"
+            _textB.value = prefs.getString("textB", "바나나") ?: "바나나"
+            _emojiB.value = prefs.getString("emojiB", "🍌") ?: "🍌"
+            _fontSizeSp.value = prefs.getFloat("fontSizeSp", 40f)
+            _textColorHex.value = prefs.getString("textColorHex", "#000000") ?: "#000000"
+            _isVerticalLayout.value = prefs.getBoolean("isVerticalLayout", false)
+            _footerText.value = prefs.getString("footerText", "EMOJI FORMULA POSTER") ?: "EMOJI FORMULA POSTER"
+            _showFooter.value = prefs.getBoolean("showFooter", true)
+            _borderStyle.value = prefs.getString("borderStyle", "thin") ?: "thin"
+            _operatorSize.value = prefs.getFloat("operatorSizeSp", 18f)
+            _operatorWeight.value = prefs.getString("operatorWeight", "light") ?: "light"
+            _mysterySize.value = prefs.getFloat("mysterySizeSp", 24f)
+            _mysteryWeight.value = prefs.getString("mysteryWeight", "bold") ?: "bold"
+            _customFontPath.value = prefs.getString("customFontPath", null)
+            _customFontName.value = prefs.getString("customFontName", null)
+            _imagePathA.value = prefs.getString("imagePathA", null)
+            _imagePathB.value = prefs.getString("imagePathB", null)
+            _imageSizeA.value = prefs.getFloat("imageSizeA", 120f)
+            _imageSizeB.value = prefs.getFloat("imageSizeB", 120f)
+            _featherA.value = prefs.getFloat("featherA", 0f)
+            _featherB.value = prefs.getFloat("featherB", 0f)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            try {
+                prefs.edit().clear().apply()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+        }
     }
 
     private fun autoSave() {
