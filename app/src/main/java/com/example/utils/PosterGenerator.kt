@@ -274,8 +274,8 @@ object PosterGenerator {
             val heightA = if (imagePathA != null) imageSizeA * scale else 160f * scale
             val heightB = if (imagePathB != null) imageSizeB * scale else 160f * scale
             val labelHeight = 72f * scale
-            val spacing = 24f * scale
-            val opSpacing = 80f * scale
+            val spacing = 12f * scale
+            val opSpacing = 36f * scale
             val opHeight = operatorSizeSp * 3.5f
             val boxHeight = mysterySizeSp * 3.5f * 2.1f // Resizing mystery box dynamically
 
@@ -289,11 +289,18 @@ object PosterGenerator {
 
             var currentY = (height - totalStackHeight) / 2f
 
-            // Helper to center text vertically by calculating its font descent/ascent
+            // Helper to center text vertically using accurate bounding box for emojis/characters
             fun drawCenteredText(canvas: Canvas, text: String, cx: Float, cy: Float, paint: Paint) {
-                val fm = paint.fontMetrics
-                val textOffset = (fm.descent + fm.ascent) / 2f
-                canvas.drawText(text, cx, cy - textOffset, paint)
+                val rect = android.graphics.Rect()
+                paint.getTextBounds(text, 0, text.length, rect)
+                if (rect.height() > 0) {
+                    val textOffset = rect.centerY().toFloat()
+                    canvas.drawText(text, cx, cy - textOffset, paint)
+                } else {
+                    val fm = paint.fontMetrics
+                    val textOffset = (fm.descent + fm.ascent) / 2f
+                    canvas.drawText(text, cx, cy - textOffset, paint)
+                }
             }
 
             // Element A
@@ -370,9 +377,16 @@ object PosterGenerator {
             val xMystery = 900f
 
             fun drawCenteredText(canvas: Canvas, text: String, cx: Float, cy: Float, paint: Paint) {
-                val fm = paint.fontMetrics
-                val textOffset = (fm.descent + fm.ascent) / 2f
-                canvas.drawText(text, cx, cy - textOffset, paint)
+                val rect = android.graphics.Rect()
+                paint.getTextBounds(text, 0, text.length, rect)
+                if (rect.height() > 0) {
+                    val textOffset = rect.centerY().toFloat()
+                    canvas.drawText(text, cx, cy - textOffset, paint)
+                } else {
+                    val fm = paint.fontMetrics
+                    val textOffset = (fm.descent + fm.ascent) / 2f
+                    canvas.drawText(text, cx, cy - textOffset, paint)
+                }
             }
 
             // Adjust horizontal specific font scales to fit neatly

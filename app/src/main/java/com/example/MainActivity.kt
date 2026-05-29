@@ -421,8 +421,8 @@ fun PosterMakerScreen(
                     val heightA = if (imagePathA != null) imageSizeA * scale else 160f * scale
                     val heightB = if (imagePathB != null) imageSizeB * scale else 160f * scale
                     val labelHeight = 72f * scale
-                    val spacing = 24f * scale
-                    val opSpacing = 80f * scale
+                    val spacing = 12f * scale
+                    val opSpacing = 36f * scale
                     val opHeight = operatorSizeSp * 3.5f
                     val boxHeight = mysterySizeSp * 3.5f * 2.1f // vertical layout multiplier 2.1
                     
