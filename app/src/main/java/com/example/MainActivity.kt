@@ -173,14 +173,20 @@ fun PosterMakerScreen(
                 if (activeCropTarget == "A") {
                     val imgDir = File(context.filesDir, "images")
                     if (imgDir.exists()) {
-                        imgDir.listFiles()?.filter { it.name.startsWith("img_a_") || (it.name.startsWith("crop_") && it.absolutePath != croppedPath) }?.forEach { it.delete() }
+                        imgDir.listFiles()?.filter { 
+                            it.name.startsWith("img_a_") || 
+                            (it.name.startsWith("crop_") && it.absolutePath != croppedPath && it.absolutePath != imagePathB) 
+                        }?.forEach { it.delete() }
                     }
                     viewModel.setImagePathA(croppedPath)
                     Toast.makeText(context, "첫 번째 이미지 업로드 완료!", Toast.LENGTH_SHORT).show()
                 } else {
                     val imgDir = File(context.filesDir, "images")
                     if (imgDir.exists()) {
-                        imgDir.listFiles()?.filter { it.name.startsWith("img_b_") || (it.name.startsWith("crop_") && it.absolutePath != croppedPath) }?.forEach { it.delete() }
+                        imgDir.listFiles()?.filter { 
+                            it.name.startsWith("img_b_") || 
+                            (it.name.startsWith("crop_") && it.absolutePath != croppedPath && it.absolutePath != imagePathA) 
+                        }?.forEach { it.delete() }
                     }
                     viewModel.setImagePathB(croppedPath)
                     Toast.makeText(context, "두 번째 이미지 업로드 완료!", Toast.LENGTH_SHORT).show()
@@ -450,7 +456,9 @@ fun PosterMakerScreen(
                             Text(
                                 text = emojiA,
                                 fontSize = (160f * scale * ratio).sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
@@ -464,7 +472,9 @@ fun PosterMakerScreen(
                             color = activeColor,
                             letterSpacing = (-0.5).sp,
                             textAlign = TextAlign.Center,
-                            fontFamily = customFontFamily
+                            fontFamily = customFontFamily,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -477,7 +487,9 @@ fun PosterMakerScreen(
                             fontWeight = opWeight,
                             color = Color(0xFF94A3B8), // slate-400
                             fontFamily = customFontFamily,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -494,7 +506,9 @@ fun PosterMakerScreen(
                             Text(
                                 text = emojiB,
                                 fontSize = (160f * scale * ratio).sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
@@ -508,7 +522,9 @@ fun PosterMakerScreen(
                             color = activeColor,
                             letterSpacing = (-0.5).sp,
                             textAlign = TextAlign.Center,
-                            fontFamily = customFontFamily
+                            fontFamily = customFontFamily,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -521,7 +537,9 @@ fun PosterMakerScreen(
                             fontWeight = opWeight,
                             color = Color(0xFF94A3B8),
                             fontFamily = customFontFamily,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -559,7 +577,9 @@ fun PosterMakerScreen(
                                 fontWeight = qWeight,
                                 color = Color(0xFF94A3B8),
                                 fontFamily = customFontFamily,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
@@ -591,7 +611,9 @@ fun PosterMakerScreen(
                             Text(
                                 text = emojiA,
                                 fontSize = (hEmojiSize * ratio).sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
@@ -604,7 +626,9 @@ fun PosterMakerScreen(
                             color = activeColor,
                             letterSpacing = (-0.5).sp,
                             textAlign = TextAlign.Center,
-                            fontFamily = customFontFamily
+                            fontFamily = customFontFamily,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -616,7 +640,9 @@ fun PosterMakerScreen(
                             fontWeight = opWeight,
                             color = Color(0xFF94A3B8),
                             fontFamily = customFontFamily,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -633,7 +659,9 @@ fun PosterMakerScreen(
                             Text(
                                 text = emojiB,
                                 fontSize = (hEmojiSize * ratio).sp,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
@@ -646,7 +674,9 @@ fun PosterMakerScreen(
                             color = activeColor,
                             letterSpacing = (-0.5).sp,
                             textAlign = TextAlign.Center,
-                            fontFamily = customFontFamily
+                            fontFamily = customFontFamily,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -658,7 +688,9 @@ fun PosterMakerScreen(
                             fontWeight = opWeight,
                             color = Color(0xFF94A3B8),
                             fontFamily = customFontFamily,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.wrapContentSize(unbounded = true),
+                            softWrap = false
                         )
                     }
 
@@ -696,7 +728,9 @@ fun PosterMakerScreen(
                                 fontWeight = qWeight,
                                 color = Color(0xFF94A3B8),
                                 fontFamily = customFontFamily,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.wrapContentSize(unbounded = true),
+                                softWrap = false
                             )
                         }
                     }
